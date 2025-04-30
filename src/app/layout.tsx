@@ -22,7 +22,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" suppressHydrationWarning>
-       <head /> {/* Keep head for potential future use */}
+      <head /> {/* Keep head for potential future use */}
       <body className={`${inter.variable} font-sans antialiased bg-background text-foreground`}> {/* Apply font variable and base styles */}
         <div className="flex min-h-screen w-full flex-col"> {/* Ensure full height */}
            <Navbar/>
