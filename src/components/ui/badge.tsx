@@ -15,6 +15,13 @@ const badgeVariants = cva(
         destructive:
           "border-transparent bg-destructive text-destructive-foreground hover:bg-destructive/80",
         outline: "text-foreground",
+        // Add specific status colors - adjust HSL or use direct Tailwind classes if preferred
+        green:
+          "border-transparent bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200 hover:bg-green-100/80 dark:hover:bg-green-900/80",
+        yellow:
+           "border-transparent bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200 hover:bg-yellow-100/80 dark:hover:bg-yellow-900/80",
+        red: // Alias for destructive, or define separately if needed
+           "border-transparent bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200 hover:bg-red-100/80 dark:hover:bg-red-900/80",
       },
     },
     defaultVariants: {
