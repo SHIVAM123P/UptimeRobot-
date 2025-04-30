@@ -7,14 +7,14 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { cn } from '@/lib/utils';
 
 export const metadata: Metadata = {
-  title: 'AlwaysUp - Pricing',
+  title: 'AlwaysUp - Pricing (India)',
   description: 'Choose the right plan for your website monitoring needs.',
 };
 
 const pricingTiers = [
   {
     name: 'Free',
-    price: '$0',
+    price: '₹0',
     frequency: '/ month',
     description: 'For personal projects & basic needs.',
     features: [
@@ -26,10 +26,11 @@ const pricingTiers = [
     cta: 'Get Started',
     href: '/', // Link back to dashboard or signup
     mostPopular: false,
+    paymentNote: '',
   },
   {
     name: 'Pro',
-    price: '$10',
+    price: '₹799', // Approx $10
     frequency: '/ month',
     description: 'For small businesses & professionals.',
     features: [
@@ -42,10 +43,11 @@ const pricingTiers = [
     cta: 'Upgrade to Pro',
     href: '#', // Placeholder for upgrade link/action
     mostPopular: true,
+    paymentNote: 'Payments via PhonePe (UPI, Cards, etc.)',
   },
   {
     name: 'Business',
-    price: '$50',
+    price: '₹3,999', // Approx $50
     frequency: '/ month',
     description: 'For teams & critical applications.',
     features: [
@@ -59,6 +61,7 @@ const pricingTiers = [
     cta: 'Contact Sales',
     href: '#', // Placeholder for contact link
     mostPopular: false,
+    paymentNote: 'Payments via PhonePe & other options available.',
   },
 ];
 
@@ -67,7 +70,7 @@ export default function PricingPage() {
     <div className="min-h-screen bg-background text-foreground">
       <header className="container mx-auto max-w-5xl py-12 px-4 text-center">
         <h1 className="text-4xl font-bold text-primary mb-3">
-          Simple, Transparent Pricing
+          Simple, Transparent Pricing (INR)
         </h1>
         <p className="text-lg text-muted-foreground">
           Choose the plan that fits your monitoring needs. Start for free!
@@ -87,7 +90,7 @@ export default function PricingPage() {
                 tier.mostPopular ? 'border-2 border-primary ring-2 ring-primary/20' : 'border'
               )}
             >
-              <CardHeader className="relative">
+              <CardHeader className="relative pb-4"> {/* Reduced padding bottom */}
                 {tier.mostPopular && (
                   <div className="absolute top-0 right-4 -mt-3 rounded-full bg-primary px-3 py-1 text-xs font-semibold text-primary-foreground">
                     Most Popular
@@ -99,8 +102,11 @@ export default function PricingPage() {
                   <span className="text-4xl font-bold tracking-tight">{tier.price}</span>
                   <span className="ml-1 text-xl font-semibold text-muted-foreground">{tier.frequency}</span>
                 </div>
+                 {tier.paymentNote && (
+                    <p className="text-xs text-muted-foreground mt-1">{tier.paymentNote}</p>
+                 )}
               </CardHeader>
-              <CardContent className="flex-grow">
+              <CardContent className="flex-grow pt-2"> {/* Reduced padding top */}
                 <ul role="list" className="space-y-3 text-sm">
                   {tier.features.map((feature) => (
                     <li key={feature} className="flex items-center gap-2">
@@ -115,6 +121,10 @@ export default function PricingPage() {
                   asChild
                   className="w-full"
                   variant={tier.mostPopular ? 'default' : 'outline'}
+                  // Disable button if it's a placeholder to avoid confusion
+                  disabled={tier.href === '#'}
+                  aria-disabled={tier.href === '#'}
+                  title={tier.href === '#' ? 'Payment integration coming soon' : undefined}
                 >
                   <Link href={tier.href}>{tier.cta}</Link>
                 </Button>
@@ -122,6 +132,9 @@ export default function PricingPage() {
             </Card>
           ))}
         </div>
+         <p className="mt-10 text-center text-sm text-muted-foreground">
+            Note: PhonePe payment gateway integration requires backend setup and is currently simulated on the frontend. Clicking upgrade buttons for paid plans will not initiate a real transaction yet.
+         </p>
       </main>
 
         <footer className="mt-12 text-center text-sm text-muted-foreground py-6 border-t">

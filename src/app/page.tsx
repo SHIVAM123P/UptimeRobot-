@@ -239,7 +239,7 @@ export default function Home() {
         <p className="mt-1">
            Free tier limited to 5 monitors. {' '}
            <Link href="/pricing" className="underline text-primary hover:text-accent">
-             View Pricing
+             View Pricing (INR)
            </Link>
            {' '} to upgrade.
          </p>
