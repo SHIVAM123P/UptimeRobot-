@@ -1,12 +1,12 @@
-
 "use client";
 
 import * as React from "react";
-import { useForm, type SubmitHandler } from "react-hook-form";
+import { useFormState, useFormStatus } from 'react-dom';
+import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { Plus } from "lucide-react";
-import Link from 'next/link'; // Import Link
+import Link from 'next/link';
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -19,9 +19,10 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { useToast } from "@/hooks/use-toast";
-import { Alert, AlertDescription } from "@/components/ui/alert"; // Import Alert components
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { addWebsite } from "@/app/actions"; // Import the server action
 
-const FREE_TIER_LIMIT = 5; // Define the limit
+const FREE_TIER_LIMIT = 5;
 
 const formSchema = z.object({
   url: z.string().url({ message: "Please enter a valid URL (e.g., https://example.com)" }),
@@ -30,12 +31,24 @@ const formSchema = z.object({
 type FormValues = z.infer<typeof formSchema>;
 
 interface AddWebsiteFormProps {
-  onAddWebsite: (url: string) => void;
-  isLoading: boolean;
-  currentMonitorCount: number; // Add prop for current count
+  currentMonitorCount: number;
 }
 
-export function AddWebsiteForm({ onAddWebsite, isLoading, currentMonitorCount }: AddWebsiteFormProps) {
+// Submit Button component to use useFormStatus
+function SubmitButton({ isLimitReached }: { isLimitReached: boolean }) {
+  const { pending } = useFormStatus();
+  return (
+    <Button
+      type="submit"
+      disabled={pending || isLimitReached}
+      aria-disabled={pending || isLimitReached}
+    >
+      {pending ? 'Adding...' : <><Plus className="mr-2 h-4 w-4" /> Add Website</>}
+    </Button>
+  );
+}
+
+export function AddWebsiteForm({ currentMonitorCount }: AddWebsiteFormProps) {
   const { toast } = useToast();
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
@@ -44,42 +57,38 @@ export function AddWebsiteForm({ onAddWebsite, isLoading, currentMonitorCount }:
     },
   });
 
+  // useFormState hook to handle server action state
+  const [state, formAction] = useFormState(addWebsite, null); // Pass the server action
+
+  const { pending } = useFormStatus(); // Get pending state for disabling input
+
   const isLimitReached = currentMonitorCount >= FREE_TIER_LIMIT;
 
-  const onSubmit: SubmitHandler<FormValues> = (data) => {
-     if (isLimitReached) {
-        // This check is redundant if the button is disabled, but good as a safeguard
-        toast({
-          variant: "destructive",
-          title: "Free Tier Limit Reached",
-          description: (
-             <>
-              You can monitor up to {FREE_TIER_LIMIT} websites on the free plan. {' '}
-              <Link href="/pricing" className="underline text-accent-foreground font-medium">
-                Upgrade
-              </Link>
-              {' '} for more monitors.
-             </>
-         ),
-        });
-        return;
-     }
+  // Effect to show toast message based on server action result
+  React.useEffect(() => {
+    if (state?.success) {
+      toast({
+        title: "Website Added",
+        description: state.success,
+      });
+      form.reset(); // Reset form on success
+    } else if (state?.error) {
+      toast({
+        variant: "destructive",
+        title: "Error Adding Website",
+        description: state.error,
+      });
+      // Optionally set form errors if fieldErrors exist
+       if (state.fieldErrors?.url) {
+         form.setError("url", { type: "server", message: state.fieldErrors.url[0] });
+       }
+    }
+  }, [state, toast, form]);
 
-     try {
-       onAddWebsite(data.url);
-       form.reset(); // Reset form after successful submission
-     } catch (error: any) {
-       toast({
-         variant: "destructive",
-         title: "Error Adding Website",
-         description: error.message || "Could not add the website.",
-       });
-     }
-  };
 
   return (
     <Form {...form}>
-       {isLimitReached && (
+       {isLimitReached && !pending && ( // Show limit alert only if not currently submitting
          <Alert variant="destructive" className="mb-4">
            <AlertDescription className="text-center">
              You've reached the free tier limit ({FREE_TIER_LIMIT} monitors). {' '}
@@ -90,8 +99,10 @@ export function AddWebsiteForm({ onAddWebsite, isLoading, currentMonitorCount }:
            </AlertDescription>
          </Alert>
        )}
+       {/* The form now calls the formAction */}
       <form
-        onSubmit={form.handleSubmit(onSubmit)}
+         action={formAction} // Use the action from useFormState
+         // onSubmit={form.handleSubmit(() => {})} // We don't need react-hook-form's onSubmit directly with formAction
         className="flex w-full flex-col gap-4 sm:flex-row sm:items-end"
       >
         <FormField
@@ -105,19 +116,16 @@ export function AddWebsiteForm({ onAddWebsite, isLoading, currentMonitorCount }:
                   placeholder="https://example.com"
                   {...field}
                   aria-label="Website URL"
-                  disabled={isLimitReached || isLoading} // Disable input if limit reached
+                  disabled={isLimitReached || pending} // Disable input if limit reached or pending
+                  required // HTML5 validation
                 />
               </FormControl>
               <FormMessage />
             </FormItem>
           )}
         />
-        <Button
-            type="submit"
-            disabled={isLoading || !form.formState.isValid || isLimitReached} // Disable button if limit reached
-        >
-          {isLoading ? 'Adding...' : <><Plus className="mr-2 h-4 w-4" /> Add Website</>}
-        </Button>
+         {/* Use the dedicated SubmitButton */}
+         <SubmitButton isLimitReached={isLimitReached} />
       </form>
     </Form>
   );

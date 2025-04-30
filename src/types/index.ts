@@ -1,16 +1,12 @@
-export interface WebsiteCheck {
-  timestamp: Date;
-  status: 'up' | 'down' | 'checking' | 'error';
-  statusCode: number | null;
-  error?: string | null;
-}
+// Types are now primarily derived from Prisma schema
+// See prisma/schema.prisma for model definitions
 
-export interface Website {
-  id: string;
-  url: string;
-  status: 'up' | 'down' | 'checking' | 'error';
-  lastCheck?: Date | null;
-  statusCode?: number | null;
-  error?: string | null;
-  history?: WebsiteCheck[]; // Added history array
-}
+// You can re-export Prisma types if needed for convenience elsewhere
+// import type { Website as PrismaWebsite, WebsiteCheck as PrismaWebsiteCheck } from '@prisma/client';
+
+// export type Website = PrismaWebsite & {
+//   history?: PrismaWebsiteCheck[]; // Example if you need to ensure history is always potentially present
+// };
+// export type WebsiteCheck = PrismaWebsiteCheck;
+
+// Or keep this file minimal if types are directly imported from @prisma/client where needed

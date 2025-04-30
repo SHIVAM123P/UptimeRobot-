@@ -1,0 +1,38 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Website {
+  id          String         @id @default(cuid())
+  url         String         @unique
+  status      String         @default("checking") // up, down, checking, error
+  lastCheck   DateTime?
+  statusCode  Int?
+  error       String?
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+  history     WebsiteCheck[]
+
+  @@index([createdAt])
+}
+
+model WebsiteCheck {
+  id         String    @id @default(cuid())
+  website    Website   @relation(fields: [websiteId], references: [id], onDelete: Cascade)
+  websiteId  String
+  timestamp  DateTime  @default(now())
+  status     String // up, down, error
+  statusCode Int?
+  error      String?
+  duration   Int? // Optional: Duration of the check in ms
+
+  @@index([websiteId, timestamp(sort: Desc)])
+}
