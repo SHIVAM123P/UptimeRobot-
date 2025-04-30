@@ -21,8 +21,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" suppressHydrationWarning>
-      <head /> {/* Keep head for potential future use */}
+    <html lang="en" suppressHydrationWarning><head /> {/* Keep head for potential future use - REMOVED WHITESPACE HERE */}
       <body className={`${inter.variable} font-sans antialiased bg-background text-foreground`}> {/* Apply font variable and base styles */}
         <div className="flex min-h-screen w-full flex-col"> {/* Ensure full height */}
            <Navbar/>
