@@ -1,7 +1,9 @@
+
 "use client";
 
 import * as React from "react";
 import { useState, useEffect, useCallback } from "react";
+import Link from 'next/link'; // Import Link
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { AddWebsiteForm } from "@/components/AddWebsiteForm";
 import { WebsiteListItem } from "@/components/WebsiteListItem";
@@ -53,7 +55,7 @@ export default function Home() {
     setIsChecking(prev => ({ ...prev, [website.id]: true }));
     try {
       // Simulating API call delay
-      await new Promise(resolve => setTimeout(resolve, 500 + Math.random() * 1000));
+      // await new Promise(resolve => setTimeout(resolve, 500 + Math.random() * 1000)); // Removed simulation delay for faster checks now
       const statusResult = await checkWebsiteStatus(website.url);
       setWebsites(prev =>
         prev.map(w =>
@@ -63,7 +65,7 @@ export default function Home() {
                 status: statusResult.isUp ? 'up' : 'down',
                 statusCode: statusResult.statusCode,
                 lastCheck: new Date(),
-                error: !statusResult.isUp ? `HTTP ${statusResult.statusCode}` : null,
+                error: !statusResult.isUp ? (statusResult.error || `HTTP ${statusResult.statusCode}`) : null, // Include error message from check
               }
             : w
         )
@@ -92,24 +94,53 @@ export default function Home() {
     }
   }, [setWebsites, toast]); // Include dependencies
 
-  // Initial load and periodic checks
+  // Initial load check
   useEffect(() => {
-    setIsLoading(true);
-    const initialChecks = websites.map(checkAndUpdateStatus);
-    Promise.all(initialChecks).finally(() => setIsLoading(false));
+      setIsLoading(true);
+      const initialChecks = websites.map(w => checkAndUpdateStatus(w));
+      Promise.all(initialChecks).finally(() => setIsLoading(false));
+      // We won't run periodic checks here initially, let interval handle it
+  }, []); // Run only on mount
 
-    // Set up interval for periodic checks (e.g., every 5 minutes for now)
-    // This is a basic implementation. Real-world would need more robust scheduling.
-    const intervalId = setInterval(() => {
-      console.log("Running periodic checks...");
-      websites.forEach(checkAndUpdateStatus);
-    }, 5 * 60 * 1000); // 5 minutes
+  // Periodic checks effect
+   useEffect(() => {
+      // Only set interval if there are websites to check
+      if (websites.length === 0) return;
 
-    return () => clearInterval(intervalId); // Cleanup interval on unmount
-  }, []); // Run only on mount initially, subsequent checks handled by interval & dependency changes
+      console.log("Setting up periodic checks...");
+      const intervalId = setInterval(() => {
+        console.log("Running periodic checks...");
+        // Create check promises for all websites
+        const checks = websites.map(website => checkAndUpdateStatus(website));
+        Promise.all(checks).catch(err => console.error("Error during periodic check batch:", err));
+      }, 5 * 60 * 1000); // 5 minutes
+
+      return () => {
+         console.log("Clearing periodic checks interval.");
+         clearInterval(intervalId); // Cleanup interval on unmount or when websites array changes
+      }
+    }, [websites, checkAndUpdateStatus]); // Re-run if websites array or check function changes
 
 
   const handleAddWebsite = async (url: string) => {
+    // Limit free tier
+    if (websites.length >= 5) {
+       toast({
+         variant: "destructive",
+         title: "Free Tier Limit Reached",
+         description: (
+             <>
+              You can monitor up to 5 websites on the free plan. {' '}
+              <Link href="/pricing" className="underline text-accent-foreground font-medium">
+                Upgrade
+              </Link>
+              {' '} for more monitors.
+             </>
+         ),
+       });
+       return;
+     }
+
     // Prevent adding duplicates
     if (websites.some(w => w.url === url)) {
       toast({
@@ -144,7 +175,7 @@ export default function Home() {
 
   const handleDeleteWebsite = (id: string) => {
     setIsDeleting(id);
-    // Simulate delete delay
+    // Simulate delete delay - replace with actual API call if backend exists
     setTimeout(() => {
       setWebsites(prev => prev.filter(w => w.id !== id));
       toast({
@@ -152,7 +183,7 @@ export default function Home() {
         description: `Monitoring stopped for the website.`,
       });
       setIsDeleting(null);
-    }, 500); // Simulate API call delay
+    }, 300); // Shorter simulated delay
   };
 
   return (
@@ -164,18 +195,19 @@ export default function Home() {
 
       <Card className="mb-8 shadow-md">
         <CardContent className="p-6">
-          <AddWebsiteForm onAddWebsite={handleAddWebsite} isLoading={isLoading && !websites.length} />
+          {/* Pass the current number of websites to potentially disable add if limit reached */}
+          <AddWebsiteForm onAddWebsite={handleAddWebsite} isLoading={isLoading && !websites.length} currentMonitorCount={websites.length} />
         </CardContent>
       </Card>
 
       <Card className="shadow-md">
         <CardHeader>
-          <CardTitle>Monitored Websites</CardTitle>
+          <CardTitle>Monitored Websites ({websites.length}/5 on Free Tier)</CardTitle>
         </CardHeader>
         <CardContent>
+          {/* Initial Loading Skeleton */}
           {isLoading && !websites.length ? (
             <div className="space-y-4">
-              <Skeleton className="h-16 w-full rounded-lg" />
               <Skeleton className="h-16 w-full rounded-lg" />
               <Skeleton className="h-16 w-full rounded-lg" />
             </div>
@@ -194,7 +226,7 @@ export default function Home() {
                   key={website.id}
                   website={website}
                   onDelete={handleDeleteWebsite}
-                  isDeleting={isDeleting === website.id || isChecking[website.id]}
+                  isDeleting={isDeleting === website.id || (isChecking[website.id] ?? false)} // Use loading state from checking too
                 />
               ))}
             </div>
@@ -204,7 +236,13 @@ export default function Home() {
 
       <footer className="mt-12 text-center text-sm text-muted-foreground">
         <p>&copy; {new Date().getFullYear()} AlwaysUp. Built with Next.js & ShadCN UI.</p>
-        <p className="mt-1">Free tier limited to 5 monitors. Upgrade for more!</p>
+        <p className="mt-1">
+           Free tier limited to 5 monitors. {' '}
+           <Link href="/pricing" className="underline text-primary hover:text-accent">
+             View Pricing
+           </Link>
+           {' '} to upgrade.
+         </p>
       </footer>
     </main>
   );
