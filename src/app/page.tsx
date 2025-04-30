@@ -7,12 +7,14 @@ import Link from 'next/link'; // Import Link
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { AddWebsiteForm } from "@/components/AddWebsiteForm";
 import { WebsiteListItem } from "@/components/WebsiteListItem";
-import { type Website } from "@/types";
+import { type Website, type WebsiteCheck } from "@/types"; // Import WebsiteCheck
 import { checkWebsiteStatus } from "@/services/uptime-checker"; // Assume this exists and works
 import { useToast } from "@/hooks/use-toast";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { ServerCrash } from "lucide-react";
+
+const MAX_HISTORY_LENGTH = 10; // Store last 10 checks
 
 // Mock Local Storage Hook (Replace with actual DB/API calls later)
 const useLocalStorage = <T,>(key: string, initialValue: T): [T, React.Dispatch<React.SetStateAction<T>>] => {
@@ -22,7 +24,22 @@ const useLocalStorage = <T,>(key: string, initialValue: T): [T, React.Dispatch<R
     }
     try {
       const item = window.localStorage.getItem(key);
-      return item ? JSON.parse(item) : initialValue;
+      // Basic migration: if history is missing, add an empty array
+      if (item) {
+          const parsed = JSON.parse(item);
+          if (Array.isArray(parsed)) {
+             parsed.forEach(site => {
+                 if (!site.history) {
+                     site.history = [];
+                 }
+                 // Ensure date objects are correctly parsed from strings
+                 if (site.lastCheck) site.lastCheck = new Date(site.lastCheck);
+                 site.history.forEach((h: WebsiteCheck) => h.timestamp = new Date(h.timestamp));
+             });
+          }
+         return parsed;
+      }
+      return initialValue;
     } catch (error) {
       console.error("Error reading localStorage key “" + key + "”:", error);
       return initialValue;
@@ -53,43 +70,48 @@ export default function Home() {
 
   const checkAndUpdateStatus = useCallback(async (website: Website) => {
     setIsChecking(prev => ({ ...prev, [website.id]: true }));
+    const checkTimestamp = new Date();
+    let currentCheckResult: WebsiteCheck;
+
     try {
-      // Simulating API call delay
-      // await new Promise(resolve => setTimeout(resolve, 500 + Math.random() * 1000)); // Removed simulation delay for faster checks now
       const statusResult = await checkWebsiteStatus(website.url);
-      setWebsites(prev =>
-        prev.map(w =>
-          w.id === website.id
-            ? {
-                ...w,
-                status: statusResult.isUp ? 'up' : 'down',
-                statusCode: statusResult.statusCode,
-                lastCheck: new Date(),
-                error: !statusResult.isUp ? (statusResult.error || `HTTP ${statusResult.statusCode}`) : null, // Include error message from check
-              }
-            : w
-        )
-      );
+      currentCheckResult = {
+        timestamp: checkTimestamp,
+        status: statusResult.isUp ? 'up' : 'down',
+        statusCode: statusResult.statusCode,
+        error: !statusResult.isUp ? (statusResult.error || `HTTP ${statusResult.statusCode}`) : null,
+      };
+
     } catch (error: any) {
       console.error(`Error checking ${website.url}:`, error);
-      setWebsites(prev =>
-        prev.map(w =>
-          w.id === website.id
-            ? {
-                ...w,
-                status: 'error',
-                lastCheck: new Date(),
-                error: error.message || "Failed to fetch status",
-              }
-            : w
-        )
-      );
+      currentCheckResult = {
+        timestamp: checkTimestamp,
+        status: 'error',
+        statusCode: null,
+        error: error.message || "Failed to fetch status",
+      };
       toast({
         variant: "destructive",
         title: `Error Checking ${website.url}`,
-        description: error.message || "Could not retrieve status.",
+        description: currentCheckResult.error,
       });
     } finally {
+        // Update website state with current check result and history
+        setWebsites(prev =>
+            prev.map(w =>
+              w.id === website.id
+                ? {
+                    ...w,
+                    status: currentCheckResult.status,
+                    statusCode: currentCheckResult.statusCode,
+                    lastCheck: currentCheckResult.timestamp,
+                    error: currentCheckResult.error,
+                    // Append new check to history, keep only the last MAX_HISTORY_LENGTH items
+                    history: [currentCheckResult, ...(w.history || [])].slice(0, MAX_HISTORY_LENGTH),
+                  }
+                : w
+            )
+          );
       setIsChecking(prev => ({ ...prev, [website.id]: false }));
     }
   }, [setWebsites, toast]); // Include dependencies
@@ -97,9 +119,14 @@ export default function Home() {
   // Initial load check
   useEffect(() => {
       setIsLoading(true);
-      const initialChecks = websites.map(w => checkAndUpdateStatus(w));
+      // Filter out websites that already have a recent check to avoid unnecessary initial checks
+      const websitesToCheck = websites.filter(w => !w.lastCheck || (new Date().getTime() - new Date(w.lastCheck).getTime()) > 60 * 1000); // Check if last check > 1 min ago
+      const initialChecks = websitesToCheck.map(w => checkAndUpdateStatus(w));
+
+      // Ensure history array exists for all websites after potential migration
+      setWebsites(prev => prev.map(w => ({ ...w, history: w.history || [] })));
+
       Promise.all(initialChecks).finally(() => setIsLoading(false));
-      // We won't run periodic checks here initially, let interval handle it
   }, []); // Run only on mount
 
   // Periodic checks effect
@@ -156,6 +183,7 @@ export default function Home() {
       id: crypto.randomUUID(), // Simple unique ID generation
       url,
       status: 'checking', // Initial status
+      history: [], // Initialize with empty history
     };
 
     // Add optimistically first
@@ -163,7 +191,7 @@ export default function Home() {
 
     // Then check status
     try {
-       await checkAndUpdateStatus(newWebsite);
+       await checkAndUpdateStatus(newWebsite); // This will also add the first history entry
        toast({
          title: "Website Added",
          description: `${url} is now being monitored.`,
