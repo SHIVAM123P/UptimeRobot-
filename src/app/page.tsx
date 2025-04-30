@@ -188,6 +188,13 @@ export default function Home() {
 
   return (
     <main className="container mx-auto max-w-4xl py-8 px-4">
+      <div className="mb-8 text-center">
+        <h1 className="text-4xl font-bold text-primary mb-2">AlwaysUp</h1>
+        <p className="text-lg text-muted-foreground">
+          Check your website uptime easily and reliably. Add your URLs below to get started.
+        </p>
+      </div>
+
       <Card className="mb-8 shadow-md">
         <CardContent className="p-6">
           {/* Pass the current number of websites to potentially disable add if limit reached */}
