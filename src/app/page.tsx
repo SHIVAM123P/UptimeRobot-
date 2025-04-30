@@ -188,11 +188,6 @@ export default function Home() {
 
   return (
     <main className="container mx-auto max-w-4xl py-8 px-4">
-      <header className="mb-8 text-center">
-        <h1 className="text-4xl font-bold text-primary mb-2">AlwaysUp</h1>
-        <p className="text-muted-foreground">Simple Website Uptime Monitoring</p>
-      </header>
-
       <Card className="mb-8 shadow-md">
         <CardContent className="p-6">
           {/* Pass the current number of websites to potentially disable add if limit reached */}
