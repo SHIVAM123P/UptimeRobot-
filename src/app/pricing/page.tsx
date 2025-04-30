@@ -20,7 +20,7 @@ const BusinessIcon = () => <svg width="24" height="24" viewBox="0 0 24 24" fill=
 const pricingTiers = [
   {
     name: 'Basic',
-    price: '₹499', // Adjusted price
+    price: '₹0', // Free tier
     frequency: '/month',
     description: 'For personal projects & basic needs.',
     features: [
@@ -29,15 +29,16 @@ const pricingTiers = [
       'Email Alerts',
       'Basic Status Page',
     ],
-    cta: 'Get the plan',
-    href: '#', // Placeholder
+    cta: 'Current Plan', // Indicate this is the default/current
+    href: '#', // Free plan, no upgrade link needed from here
     mostPopular: false,
     icon: BasicIcon,
-    footerNote: 'No extra hidden charge',
+    footerNote: 'Free forever for up to 5 monitors.',
+    disabled: true, // Disable button for current plan
   },
   {
     name: 'Pro',
-    price: '₹799', // Kept this one as requested earlier
+    price: '₹799',
     frequency: '/month',
     description: 'For small businesses & professionals.',
     features: [
@@ -47,15 +48,16 @@ const pricingTiers = [
       'Customizable Status Page',
       'Advanced Reporting',
     ],
-    cta: 'Get the plan',
-    href: '#', // Placeholder
+    cta: 'Upgrade to Pro',
+    href: '#', // Placeholder - Replace with actual payment/upgrade link
     mostPopular: true,
     icon: null, // No specific icon shown for Pro in the image
     footerNote: 'No extra hidden charge',
+    disabled: true, // Disable until payment integration
   },
   {
     name: 'Business',
-    price: '₹3,999', // Kept this one
+    price: '₹3,999',
     frequency: '/month',
     description: 'For teams & critical applications.',
     features: [
@@ -66,11 +68,12 @@ const pricingTiers = [
       'Priority Support',
       'API Access',
     ],
-    cta: 'Get the plan',
-    href: '#', // Placeholder
+    cta: 'Upgrade to Business',
+    href: '#', // Placeholder - Replace with actual payment/upgrade link
     mostPopular: false,
     icon: BusinessIcon,
     footerNote: 'No extra hidden charge',
+    disabled: true, // Disable until payment integration
   },
 ];
 
@@ -79,15 +82,14 @@ export default function PricingPage() {
     <div className="min-h-screen bg-background text-foreground py-16 px-4">
       <header className="container mx-auto max-w-5xl text-center mb-12">
         <Badge variant="secondary" className="mb-4 bg-primary/10 text-primary font-semibold border-primary/20">
-            Simple Pricing
+            Simple Pricing (INR)
         </Badge>
         <h1 className="text-4xl md:text-5xl font-bold text-foreground mb-4">
           Choose Your Plan
         </h1>
         <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-          Boost your website reliability with AlwaysUp monitoring. Select the plan that matches your needs and gain peace of mind today.
+          Boost your website reliability with AlwaysUp monitoring. Select the plan that matches your needs and gain peace of mind today. Payments via PhonePe (UPI) coming soon.
         </p>
-         {/* Removed back link for cleaner look */}
       </header>
 
       <main className="container mx-auto max-w-6xl px-4">
@@ -134,29 +136,32 @@ export default function PricingPage() {
                 </ul>
               </CardContent>
 
-              <CardFooter className="flex flex-col items-center pt-6 pb-8 px-6 border-t border-border/30"> {/* Added border */}
-                <Button
-                  asChild
-                  className="w-full mb-4 bg-gradient-to-r from-primary/80 to-primary hover:opacity-90 transition-opacity text-primary-foreground font-semibold" // Updated button style
-                  // variant={tier.mostPopular ? 'default' : 'outline'} // Simplified variant
-                  disabled={tier.href === '#'}
-                  aria-disabled={tier.href === '#'}
-                  title={tier.href === '#' ? 'Payment integration coming soon' : undefined}
-                >
-                  <Link href={tier.href}>{tier.cta} &rarr;</Link> {/* Added arrow */}
-                </Button>
-                <p className="text-xs text-muted-foreground">{tier.footerNote}</p>
-                 {/* Removed specific payment note from here */}
+              {/* Ensure CardFooter only contains allowed children */}
+              <CardFooter className="flex flex-col items-center pt-6 pb-8 px-6 border-t border-border/30">
+                 {/* Button is a direct child */}
+                 <Button
+                   asChild={tier.href !== '#' && !tier.disabled} // Only use asChild if it's a link and not disabled
+                   className="w-full mb-4 bg-gradient-to-r from-primary/80 to-primary hover:opacity-90 transition-opacity text-primary-foreground font-semibold"
+                   disabled={tier.disabled} // Use the disabled property from the tier
+                   aria-disabled={tier.disabled}
+                   title={tier.disabled && tier.href === '#' ? 'Payment integration coming soon' : tier.disabled && tier.name === 'Basic' ? 'This is your current plan' : undefined}
+                 >
+                   {tier.href !== '#' && !tier.disabled ? ( // Render Link only if it's a valid link and not disabled
+                     <Link href={tier.href}>{tier.cta} &rarr;</Link>
+                   ) : ( // Render a span or the button itself otherwise
+                     <span>{tier.cta}{tier.href !== '#' && !tier.disabled && ' →'}</span>
+                   )}
+                 </Button>
+                 {/* Paragraph is a direct child */}
+                 <p className="text-xs text-muted-foreground">{tier.footerNote}</p>
               </CardFooter>
             </Card>
           ))}
         </div>
          <p className="mt-12 text-center text-sm text-muted-foreground">
-            Note: PhonePe payment gateway integration requires backend setup and is currently simulated. Clicking upgrade buttons will not initiate a real transaction yet.
+            Note: PhonePe/UPI payment gateway integration requires backend setup and is currently simulated. Upgrade buttons are disabled until integration is complete.
          </p>
       </main>
-
-        {/* Removed separate footer */}
     </div>
   );
 }
