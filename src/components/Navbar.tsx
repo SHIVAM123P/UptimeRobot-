@@ -1,7 +1,7 @@
 
 import Link from 'next/link';
-import { Home, Menu, Package2, CircleUser } from 'lucide-react'; // Added Package2 and CircleUser
-import { Button } from '@/components/ui/button'; // Added Button import
+import { Home, Menu, Package2, CircleUser, Settings, LifeBuoy, LogOut } from 'lucide-react'; // Added more specific icons
+import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -9,39 +9,44 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu'; // Added DropdownMenu imports
-import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet'; // Added Sheet imports
+} from '@/components/ui/dropdown-menu';
+import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
+import { cn } from '@/lib/utils'; // Import cn utility
 
-export default function Navbar() { // Changed to default export
+export default function Navbar() {
+  const navLinks = [
+    { href: '/', label: 'Dashboard' },
+    { href: '/pricing', label: 'Pricing' },
+    { href: '/about', label: 'About Us' },
+  ];
+
   return (
-    <header className="sticky top-0 flex h-16 items-center gap-4 border-b bg-background px-4 md:px-6 z-50">
+    <header className="sticky top-0 z-50 flex h-16 items-center gap-4 border-b bg-background px-4 md:px-6">
+      {/* Desktop Navigation */}
       <nav className="hidden flex-col gap-6 text-lg font-medium md:flex md:flex-row md:items-center md:gap-5 md:text-sm lg:gap-6">
         <Link
           href="/"
-          className="flex items-center gap-2 text-lg font-semibold md:text-base text-primary"
+          className="flex items-center gap-2 text-lg font-semibold md:text-base text-primary whitespace-nowrap" // Ensure logo/name doesn't wrap
         >
           <Package2 className="h-6 w-6" />
-          <span className="sr-only">AlwaysUp</span>
+          <span className="">AlwaysUp</span> {/* Keep name visible */}
         </Link>
-        <Link
-          href="/"
-          className="text-foreground transition-colors hover:text-foreground"
-        >
-          Dashboard
-        </Link>
-        <Link
-          href="/pricing"
-          className="text-muted-foreground transition-colors hover:text-foreground"
-        >
-          Pricing
-        </Link>
-        <Link
-          href="/about"
-          className="text-muted-foreground transition-colors hover:text-foreground"
-        >
-          About Us
-        </Link>
+        {navLinks.map((link) => (
+          <Link
+            key={link.href}
+            href={link.href}
+             // TODO: Add active link highlighting based on current route
+            className={cn(
+              "transition-colors hover:text-foreground",
+              // Example active state: pathname === link.href ? "text-foreground font-semibold" : "text-muted-foreground"
+              "text-muted-foreground" // Default state
+            )}
+          >
+            {link.label}
+          </Link>
+        ))}
       </nav>
+
       {/* Mobile Navigation */}
       <Sheet>
         <SheetTrigger asChild>
@@ -55,35 +60,36 @@ export default function Navbar() { // Changed to default export
             <span className="sr-only">Toggle navigation menu</span>
           </Button>
         </SheetTrigger>
-        <SheetContent side="left">
-          <nav className="grid gap-6 text-lg font-medium">
-            <Link
-              href="/"
-              className="flex items-center gap-2 text-lg font-semibold text-primary"
-            >
-              <Package2 className="h-6 w-6" />
-              <span className="sr-only">AlwaysUp</span>
-            </Link>
-             <Link href="/" className="hover:text-foreground">
-              Dashboard
-            </Link>
-            <Link
-              href="/pricing"
-              className="text-muted-foreground hover:text-foreground"
-            >
-              Pricing
-            </Link>
-            <Link
-              href="/about"
-              className="text-muted-foreground hover:text-foreground"
-            >
-              About Us
-            </Link>
-          </nav>
-        </SheetContent>
+        <SheetContent side="left" className="flex flex-col"> {/* Use flex-col for layout */}
+           <nav className="grid gap-6 text-lg font-medium mt-4"> {/* Add margin top */}
+             <Link
+               href="/"
+               className="flex items-center gap-2 text-lg font-semibold text-primary mb-4" // Add margin bottom
+             >
+               <Package2 className="h-6 w-6" />
+               <span>AlwaysUp</span>
+             </Link>
+             {navLinks.map((link) => (
+               <Link
+                 key={link.href}
+                 href={link.href}
+                 // TODO: Add active link highlighting for mobile
+                 className={cn(
+                   "transition-colors hover:text-foreground",
+                   // Example active state: pathname === link.href ? "text-foreground font-semibold" : "text-muted-foreground"
+                   "text-muted-foreground" // Default state
+                 )}
+                 // onClick={() => closeSheet()} // Consider closing sheet on navigation
+               >
+                 {link.label}
+               </Link>
+             ))}
+           </nav>
+         </SheetContent>
       </Sheet>
+
+      {/* Right side items (User Menu) */}
       <div className="flex w-full items-center justify-end gap-4 md:ml-auto md:gap-2 lg:gap-4">
-        {/* Placeholder for potential search or other actions */}
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button variant="secondary" size="icon" className="rounded-full">
@@ -94,10 +100,19 @@ export default function Navbar() { // Changed to default export
           <DropdownMenuContent align="end">
             <DropdownMenuLabel>My Account</DropdownMenuLabel>
             <DropdownMenuSeparator />
-            <DropdownMenuItem>Settings</DropdownMenuItem>
-            <DropdownMenuItem>Support</DropdownMenuItem>
+            <DropdownMenuItem>
+              <Settings className="mr-2 h-4 w-4" />
+              <span>Settings</span>
+            </DropdownMenuItem>
+            <DropdownMenuItem>
+              <LifeBuoy className="mr-2 h-4 w-4" />
+              <span>Support</span>
+            </DropdownMenuItem>
             <DropdownMenuSeparator />
-            <DropdownMenuItem>Logout</DropdownMenuItem>
+            <DropdownMenuItem>
+               <LogOut className="mr-2 h-4 w-4" />
+              <span>Logout</span>
+            </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
       </div>
